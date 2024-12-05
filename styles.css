@@ -1,0 +1,376 @@
+/* styles.css */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f0f4f8;
+  margin: 0;
+  padding: 0;
+  color: #333;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #007BFF;
+  color: white;
+  padding: 10px 20px;
+  position: relative;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 1.5em;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
+.search-container {
+  display: flex;
+  align-items: center;
+  margin-right: 10px;
+}
+
+.search-container input {
+  padding: 5px;
+  border: none;
+  border-radius: 5px 0 0 5px;
+  outline: none;
+}
+
+.search-container button {
+  padding: 6px 10px;
+  border: none;
+  background-color: #0056b3;
+  color: white;
+  border-radius: 0 5px 5px 0;
+  cursor: pointer;
+}
+
+.search-container button:hover {
+  background-color: #004494;
+}
+
+.menu {
+  position: relative;
+}
+
+#menu-button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5em;
+  cursor: pointer;
+}
+
+.menu-options {
+  position: absolute;
+  top: 35px;
+  right: 0;
+  background-color: white;
+  color: #333;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  width: 220px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  z-index: 1000;
+}
+
+.menu-options.hidden {
+  display: none;
+}
+
+.menu-options button {
+  width: 100%;
+  padding: 10px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.menu-options button:hover {
+  background-color: #f0f0f0;
+}
+
+main {
+  padding: 20px;
+}
+
+#add-item {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+#add-item input {
+  padding: 10px;
+  margin-right: 10px;
+  border: 2px solid #007BFF;
+  border-radius: 5px;
+  width: 200px;
+}
+
+#save-btn {
+  padding: 10px 20px;
+  background-color: #007BFF;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+#save-btn:hover {
+  background-color: #0056b3;
+}
+
+#item-list {
+  list-style-type: none;
+  padding: 0;
+  max-width: 800px;
+  margin: 0 auto 20px auto;
+}
+
+#item-list li {
+  display: flex;
+  align-items: center;
+  background-color: #ffffff;
+  padding: 15px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  margin-bottom: 10px;
+  transition: background-color 0.3s;
+  position: relative;
+}
+
+#item-list li:hover {
+  background-color: #f9f9f9;
+}
+
+.item-name {
+  flex-grow: 1;
+  cursor: pointer;
+}
+
+.item-options {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: white;
+  color: #333;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  width: 150px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  z-index: 1000;
+}
+
+.item-options button {
+  width: 100%;
+  padding: 10px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.item-options button:hover {
+  background-color: #f0f0f0;
+}
+
+#item-list li.show-options .item-options {
+  display: block;
+}
+
+/* Modal Styles */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.modal.hidden {
+  display: none;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 5px;
+  width: 90%;
+  max-width: 500px;
+  position: relative;
+}
+
+.close-button {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 1.5em;
+  cursor: pointer;
+}
+
+/* Recycle Bin Styles */
+#recycle-bin-list,
+#multi-delete-item-list {
+  list-style-type: none;
+  padding: 0;
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 20px;
+}
+
+#recycle-bin-list li,
+#multi-delete-item-list li {
+  display: flex;
+  align-items: center;
+  padding: 5px 0;
+}
+
+#recycle-bin-list li input,
+#multi-delete-item-list li input {
+  margin-right: 10px;
+  transform: scale(1.2);
+}
+
+#restore-selected-btn,
+#empty-bin-btn,
+#multi-delete-confirm-btn {
+  padding: 10px 20px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  margin-right: 10px;
+}
+
+#restore-selected-btn:hover,
+#empty-bin-btn:hover,
+#multi-delete-confirm-btn:hover {
+  background-color: #c82333;
+}
+
+#restore-selected-btn {
+  background-color: #28a745;
+}
+
+#restore-selected-btn:hover {
+  background-color: #218838;
+}
+
+#empty-bin-btn {
+  background-color: #6c757d;
+}
+
+#empty-bin-btn:hover {
+  background-color: #5a6268;
+}
+
+/* Auto Backup Modal Styles */
+#auto-backup-modal .modal-content {
+  max-width: 500px;
+}
+
+#backup-schedule-container {
+  margin-top: 15px;
+}
+
+#backup-schedule-container.hidden {
+  display: none;
+}
+
+.days-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.days-checkboxes label {
+  margin-right: 10px;
+  margin-bottom: 10px;
+}
+
+#save-auto-backup-settings-btn {
+  margin-top: 15px;
+  padding: 10px 20px;
+  background-color: #007BFF;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#save-auto-backup-settings-btn:hover {
+  background-color: #0056b3;
+}
+
+footer {
+  text-align: center;
+  padding: 10px;
+  background-color: #f0f4f8;
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .header-right {
+    margin-top: 10px;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .search-container {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+
+  .search-container input {
+    width: calc(100% - 70px);
+  }
+
+  .search-container button {
+    width: 60px;
+  }
+
+  #add-item {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  #add-item input,
+  #save-btn {
+    width: 90%;
+    margin: 5px 0;
+  }
+
+  #item-list li {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .item-name {
+    width: 100%;
+  }
+}
