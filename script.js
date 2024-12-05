@@ -178,9 +178,9 @@ searchBtn.addEventListener('click', function() {
   }
 
   var queryRef = itemsCollection
-    .where('name', '>=', searchTerm)
-    .where('name', '<=', searchTerm + '\uf8ff')
-    .orderBy('name');
+    .where('nameLower', '>=', searchTerm)
+    .where('nameLower', '<=', searchTerm + '\uf8ff')
+    .orderBy('nameLower');
 
   queryRef.get()
     .then(function(snapshot) {
@@ -347,6 +347,7 @@ restoreFileInput.addEventListener('change', function(e) {
                 batchAdd.set(docRef, {
                   name: item.name,
                   price: item.price,
+                  nameLower: item.name.toLowerCase(),
                   timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 });
               });
@@ -465,37 +466,40 @@ multiDeleteConfirmBtn.addEventListener('click', function() {
   var confirmed = confirm('Are you sure you want to delete ' + checkboxes.length + ' selected item(s)? They will be moved to the recycle bin.');
   if (!confirmed) return;
 
+  var promises = [];
   checkboxes.forEach(function(cb) {
     var itemId = cb.getAttribute('data-id');
-    itemsCollection.doc(itemId).get()
-      .then(function(docSnap) {
-        if (docSnap.exists) {
-          var itemData = docSnap.data();
-          // Add to recycle bin
-          recycleBinCollection.add({
-            name: itemData.name,
-            price: itemData.price,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-          })
-          .then(function() {
-            // Delete from items
-            return itemsCollection.doc(itemId).delete();
-          })
-          .then(function() {
-            alert('Selected items moved to recycle bin.');
-            if (autoBackupSettings.enabled) autoBackup(); // Automatic backup after multi-delete
-            console.log('Item moved to recycle bin:', itemData.name);
-          })
-          .catch(function(error) {
-            console.error("Error during multi-delete:", error);
-            alert('Failed to delete some items.');
-          });
-        }
-      })
-      .catch(function(error) {
-        console.error("Error fetching item for multi-delete:", error);
-      });
+    var itemDocRef = itemsCollection.doc(itemId);
+    promises.push(
+      itemDocRef.get()
+        .then(function(docSnap) {
+          if (docSnap.exists) {
+            var itemData = docSnap.data();
+            // Add to recycle bin
+            return recycleBinCollection.add({
+              name: itemData.name,
+              price: itemData.price,
+              timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            })
+            .then(function() {
+              // Delete from items
+              return itemDocRef.delete();
+            });
+          }
+        })
+    );
   });
+
+  Promise.all(promises)
+    .then(function() {
+      alert('Selected items moved to recycle bin.');
+      if (autoBackupSettings.enabled) autoBackup(); // Automatic backup after multi-delete
+      console.log('Items moved to recycle bin.');
+    })
+    .catch(function(error) {
+      console.error("Error during multi-delete:", error);
+      alert('Failed to delete some items.');
+    });
 
   closeMultiDeleteModal();
 });
@@ -556,37 +560,41 @@ restoreSelectedBtn.addEventListener('click', function() {
   var confirmed = confirm('Are you sure you want to restore ' + checkboxes.length + ' selected item(s)?');
   if (!confirmed) return;
 
+  var promises = [];
   checkboxes.forEach(function(cb) {
     var binItemId = cb.getAttribute('data-id');
-    recycleBinCollection.doc(binItemId).get()
-      .then(function(docSnap) {
-        if (docSnap.exists) {
-          var itemData = docSnap.data();
-          // Add to items
-          itemsCollection.add({
-            name: itemData.name,
-            price: itemData.price,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-          })
-          .then(function() {
-            // Delete from recycle bin
-            return recycleBinCollection.doc(binItemId).delete();
-          })
-          .then(function() {
-            alert('Selected items restored.');
-            if (autoBackupSettings.enabled) autoBackup(); // Automatic backup after restoration
-            console.log('Item restored from recycle bin:', itemData.name);
-          })
-          .catch(function(error) {
-            console.error("Error restoring item:", error);
-            alert('Failed to restore some items.');
-          });
-        }
-      })
-      .catch(function(error) {
-        console.error("Error fetching item from recycle bin:", error);
-      });
+    var binItemDocRef = recycleBinCollection.doc(binItemId);
+    promises.push(
+      binItemDocRef.get()
+        .then(function(docSnap) {
+          if (docSnap.exists) {
+            var itemData = docSnap.data();
+            // Add to items
+            return itemsCollection.add({
+              name: itemData.name,
+              price: itemData.price,
+              nameLower: itemData.name.toLowerCase(),
+              timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            })
+            .then(function() {
+              // Delete from recycle bin
+              return binItemDocRef.delete();
+            });
+          }
+        })
+    );
   });
+
+  Promise.all(promises)
+    .then(function() {
+      alert('Selected items restored.');
+      if (autoBackupSettings.enabled) autoBackup(); // Automatic backup after restoration
+      console.log('Items restored from recycle bin.');
+    })
+    .catch(function(error) {
+      console.error("Error restoring items:", error);
+      alert('Failed to restore some items.');
+    });
 });
 
 // Empty Bin Button
@@ -680,6 +688,7 @@ saveEditBtn.addEventListener('click', function() {
     itemsCollection.doc(currentEditIndex).update({
       name: newName,
       price: priceNumber,
+      nameLower: newName.toLowerCase(),
       timestamp: firebase.firestore.FieldValue.serverTimestamp()
     })
     .then(function() {

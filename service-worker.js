@@ -55,7 +55,6 @@ self.addEventListener('fetch', function(event) {
           }
         ).catch(function(error) {
           console.error('Fetch failed:', error);
-          // Optionally, return a fallback page or image
         });
       })
   );
