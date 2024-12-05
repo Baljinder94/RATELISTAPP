@@ -506,4 +506,18 @@ body.large-text {
 }
 
 /* Modals for Changing Username and Password */
-/* (Same as existing modal styles) */
+.modal-content input[type="text"],
+.modal-content input[type="password"] {
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+}
+
+.modal-content button {
+  padding: 10px 20px;
+  width: 100%;
+}
+
+.modal-content h2 {
+  margin-top: 0;
+}

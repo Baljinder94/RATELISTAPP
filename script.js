@@ -3,6 +3,7 @@
 console.log("Script.js is loading...");
 
 // Firebase configuration
+// Please replace the placeholders with your actual Firebase project details
 var firebaseConfig = {
   apiKey: "AIzaSyDEICJygAHllEpGKnnEoJigsJt2tixSc9k", // Replace with your Firebase API key
   authDomain: "ratelistapp-8adab.firebaseapp.com", // Replace with your Firebase Auth domain
