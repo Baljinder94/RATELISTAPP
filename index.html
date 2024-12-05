@@ -8,98 +8,165 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
-  <header>
-    <h1>Rate List App</h1>
-    <div class="header-right">
-      <div class="search-container">
-        <input type="text" id="search-input" placeholder="Search Item">
-        <button id="search-btn">Search</button>
-      </div>
-      <div class="menu">
-        <button id="menu-button" aria-label="More options">
-          &#x22EE; <!-- Vertical Ellipsis -->
+  <!-- Login Page -->
+  <div id="login-page" class="page">
+    <h2>Login</h2>
+    <input type="email" id="login-email" placeholder="Email">
+    <input type="password" id="login-password" placeholder="Password">
+    <label>
+      <input type="checkbox" id="remember-me"> Remember Me
+    </label>
+    <button id="login-btn">Login</button>
+    <p>Don't have an account? <a href="#" id="show-register">Register here</a></p>
+  </div>
+
+  <!-- Registration Page -->
+  <div id="register-page" class="page hidden">
+    <h2>Register</h2>
+    <input type="text" id="register-username" placeholder="Username">
+    <input type="email" id="register-email" placeholder="Email">
+    <input type="password" id="register-password" placeholder="Password">
+    <input type="password" id="register-confirm-password" placeholder="Confirm Password">
+    <button id="register-btn">Register</button>
+    <p>Already have an account? <a href="#" id="show-login">Login here</a></p>
+  </div>
+
+  <!-- Main App Content -->
+  <div id="main-app" class="hidden">
+    <header>
+      <div class="sidebar-toggle">
+        <button id="sidebar-button" aria-label="Menu">
+          &#9776; <!-- Three Horizontal Lines -->
         </button>
-        <div id="menu-options" class="menu-options hidden">
-          <button id="backup-btn">Backup Data</button>
-          <button id="restore-btn">Restore Data</button>
-          <button id="multi-delete-btn">Multi Delete Items</button>
-          <button id="recycle-bin-btn">Recycle Bin</button>
-          <button id="auto-backup-settings-btn">Auto Backup Settings</button>
-          <button id="clear-data-btn">Clear All Data</button>
+      </div>
+      <h1>Rate List App</h1>
+      <div class="header-right">
+        <div class="search-container">
+          <input type="text" id="search-input" placeholder="Search Item">
+          <button id="search-btn">Search</button>
+        </div>
+        <div class="menu">
+          <button id="menu-button" aria-label="More options">
+            &#x22EE; <!-- Vertical Ellipsis -->
+          </button>
+          <div id="menu-options" class="menu-options hidden">
+            <button id="backup-btn">Backup Data</button>
+            <button id="restore-btn">Restore Data</button>
+            <button id="multi-delete-btn">Multi Delete Items</button>
+            <button id="recycle-bin-btn">Recycle Bin</button>
+            <button id="auto-backup-settings-btn">Auto Backup Settings</button>
+            <button id="clear-data-btn">Clear All Data</button>
+          </div>
         </div>
       </div>
-    </div>
-  </header>
+    </header>
 
-  <main>
-    <section id="add-item">
-      <input type="text" id="item-name" placeholder="Item Name">
-      <input type="number" id="item-price" placeholder="Price" min="0" step="0.01">
-      <button id="save-btn">Save</button>
-    </section>
-
-    <ul id="item-list"></ul>
-  </main>
-
-  <!-- Modal for Editing Items -->
-  <div id="edit-modal" class="modal hidden">
-    <div class="modal-content">
-      <span class="close-button" id="close-edit-modal">&times;</span>
-      <h2>Edit Item</h2>
-      <input type="text" id="edit-item-name" placeholder="Item Name">
-      <input type="number" id="edit-item-price" placeholder="Price" min="0" step="0.01">
-      <button id="save-edit-btn">Save Changes</button>
-    </div>
-  </div>
-
-  <!-- Modal for Recycle Bin -->
-  <div id="recycle-bin-modal" class="modal hidden">
-    <div class="modal-content">
-      <span class="close-button" id="close-recycle-bin-modal">&times;</span>
-      <h2>Recycle Bin</h2>
-      <ul id="recycle-bin-list"></ul>
-      <button id="restore-selected-btn">Restore Selected Items</button>
-      <button id="empty-bin-btn">Empty Bin</button>
-    </div>
-  </div>
-
-  <!-- Modal for Multi Delete Items -->
-  <div id="multi-delete-modal" class="modal hidden">
-    <div class="modal-content">
-      <span class="close-button" id="close-multi-delete-modal">&times;</span>
-      <h2>Multi Delete Items</h2>
-      <div class="select-options">
-        <button id="select-all-btn">Select All</button>
-        <button id="select-none-btn">Select None</button>
+    <!-- Sidebar Menu -->
+    <div id="sidebar-menu" class="sidebar hidden">
+      <button id="close-sidebar">&times;</button>
+      <h3>Settings</h3>
+      <button id="change-username-btn">Change Username</button>
+      <button id="change-password-btn">Change Password</button>
+      <h3>Text Size</h3>
+      <div class="text-size-controls">
+        <button id="decrease-text-size">A-</button>
+        <button id="increase-text-size">A+</button>
       </div>
-      <ul id="multi-delete-item-list"></ul>
-      <button id="multi-delete-confirm-btn">Delete Selected Items</button>
+      <button id="logout-btn">Logout</button>
     </div>
-  </div>
 
-  <!-- Modal for Auto Backup Settings -->
-  <div id="auto-backup-modal" class="modal hidden">
-    <div class="modal-content">
-      <span class="close-button" id="close-auto-backup-modal">&times;</span>
-      <h2>Auto Backup Settings</h2>
-      <label>
-        <input type="checkbox" id="auto-backup-toggle">
-        Enable Automatic Backup
-      </label>
-      <div id="backup-schedule-container" class="hidden">
-        <p>Select days for scheduled backups:</p>
-        <div class="days-checkboxes">
-          <label><input type="checkbox" value="0"> Sunday</label>
-          <label><input type="checkbox" value="1"> Monday</label>
-          <label><input type="checkbox" value="2"> Tuesday</label>
-          <label><input type="checkbox" value="3"> Wednesday</label>
-          <label><input type="checkbox" value="4"> Thursday</label>
-          <label><input type="checkbox" value="5"> Friday</label>
-          <label><input type="checkbox" value="6"> Saturday</label>
+    <main>
+      <section id="add-item">
+        <input type="text" id="item-name" placeholder="Item Name">
+        <input type="number" id="item-price" placeholder="Price" min="0" step="0.01">
+        <button id="save-btn">Save</button>
+      </section>
+
+      <ul id="item-list"></ul>
+    </main>
+
+    <!-- Modal for Editing Items -->
+    <div id="edit-modal" class="modal hidden">
+      <div class="modal-content">
+        <span class="close-button" id="close-edit-modal">&times;</span>
+        <h2>Edit Item</h2>
+        <input type="text" id="edit-item-name" placeholder="Item Name">
+        <input type="number" id="edit-item-price" placeholder="Price" min="0" step="0.01">
+        <button id="save-edit-btn">Save Changes</button>
+      </div>
+    </div>
+
+    <!-- Modal for Recycle Bin -->
+    <div id="recycle-bin-modal" class="modal hidden">
+      <div class="modal-content">
+        <span class="close-button" id="close-recycle-bin-modal">&times;</span>
+        <h2>Recycle Bin</h2>
+        <ul id="recycle-bin-list"></ul>
+        <button id="restore-selected-btn">Restore Selected Items</button>
+        <button id="empty-bin-btn">Empty Bin</button>
+      </div>
+    </div>
+
+    <!-- Modal for Multi Delete Items -->
+    <div id="multi-delete-modal" class="modal hidden">
+      <div class="modal-content">
+        <span class="close-button" id="close-multi-delete-modal">&times;</span>
+        <h2>Multi Delete Items</h2>
+        <div class="select-options">
+          <button id="select-all-btn">Select All</button>
+          <button id="select-none-btn">Select None</button>
         </div>
+        <ul id="multi-delete-item-list"></ul>
+        <button id="multi-delete-confirm-btn">Delete Selected Items</button>
       </div>
-      <button id="save-auto-backup-settings-btn">Save Settings</button>
     </div>
+
+    <!-- Modal for Auto Backup Settings -->
+    <div id="auto-backup-modal" class="modal hidden">
+      <div class="modal-content">
+        <span class="close-button" id="close-auto-backup-modal">&times;</span>
+        <h2>Auto Backup Settings</h2>
+        <label>
+          <input type="checkbox" id="auto-backup-toggle">
+          Enable Automatic Backup
+        </label>
+        <div id="backup-schedule-container" class="hidden">
+          <p>Select days for scheduled backups:</p>
+          <div class="days-checkboxes">
+            <label><input type="checkbox" value="0"> Sunday</label>
+            <label><input type="checkbox" value="1"> Monday</label>
+            <label><input type="checkbox" value="2"> Tuesday</label>
+            <label><input type="checkbox" value="3"> Wednesday</label>
+            <label><input type="checkbox" value="4"> Thursday</label>
+            <label><input type="checkbox" value="5"> Friday</label>
+            <label><input type="checkbox" value="6"> Saturday</label>
+          </div>
+        </div>
+        <button id="save-auto-backup-settings-btn">Save Settings</button>
+      </div>
+    </div>
+
+    <!-- Modals for Changing Username and Password -->
+    <div id="change-username-modal" class="modal hidden">
+      <div class="modal-content">
+        <span class="close-button" id="close-change-username-modal">&times;</span>
+        <h2>Change Username</h2>
+        <input type="text" id="new-username" placeholder="New Username">
+        <button id="save-new-username-btn">Save Changes</button>
+      </div>
+    </div>
+
+    <div id="change-password-modal" class="modal hidden">
+      <div class="modal-content">
+        <span class="close-button" id="close-change-password-modal">&times;</span>
+        <h2>Change Password</h2>
+        <input type="password" id="current-password" placeholder="Current Password">
+        <input type="password" id="new-password" placeholder="New Password">
+        <input type="password" id="confirm-new-password" placeholder="Confirm New Password">
+        <button id="save-new-password-btn">Change Password</button>
+      </div>
+    </div>
+
   </div>
 
   <!-- Hidden file input for restoring data -->
@@ -117,6 +184,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
   <!-- Include your main script -->
   <script src="script.js"></script>

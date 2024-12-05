@@ -17,12 +17,56 @@ var firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 firebase.analytics();
 var db = firebase.firestore();
+var auth = firebase.auth();
 
-// Data Collections (Shared)
-var itemsCollection = db.collection('items');
-var recycleBinCollection = db.collection('recycleBin');
+// Global Variables
+var currentUser = null;
+var itemsCollection = null;
+var recycleBinCollection = null;
+var userSettingsDoc = null;
 
 // DOM Elements
+// Authentication Elements
+var loginPage = document.getElementById('login-page');
+var registerPage = document.getElementById('register-page');
+var mainApp = document.getElementById('main-app');
+var loginEmail = document.getElementById('login-email');
+var loginPassword = document.getElementById('login-password');
+var loginBtn = document.getElementById('login-btn');
+var rememberMeCheckbox = document.getElementById('remember-me');
+var showRegisterLink = document.getElementById('show-register');
+var registerUsername = document.getElementById('register-username');
+var registerEmail = document.getElementById('register-email');
+var registerPassword = document.getElementById('register-password');
+var registerConfirmPassword = document.getElementById('register-confirm-password');
+var registerBtn = document.getElementById('register-btn');
+var showLoginLink = document.getElementById('show-login');
+
+// Sidebar Elements
+var sidebarMenu = document.getElementById('sidebar-menu');
+var sidebarButton = document.getElementById('sidebar-button');
+var closeSidebarBtn = document.getElementById('close-sidebar');
+var changeUsernameBtn = document.getElementById('change-username-btn');
+var changePasswordBtn = document.getElementById('change-password-btn');
+var logoutBtn = document.getElementById('logout-btn');
+var decreaseTextSizeBtn = document.getElementById('decrease-text-size');
+var increaseTextSizeBtn = document.getElementById('increase-text-size');
+
+// Change Username Modal Elements
+var changeUsernameModal = document.getElementById('change-username-modal');
+var closeChangeUsernameModalBtn = document.getElementById('close-change-username-modal');
+var newUsernameInput = document.getElementById('new-username');
+var saveNewUsernameBtn = document.getElementById('save-new-username-btn');
+
+// Change Password Modal Elements
+var changePasswordModal = document.getElementById('change-password-modal');
+var closeChangePasswordModalBtn = document.getElementById('close-change-password-modal');
+var currentPasswordInput = document.getElementById('current-password');
+var newPasswordInput = document.getElementById('new-password');
+var confirmNewPasswordInput = document.getElementById('confirm-new-password');
+var saveNewPasswordBtn = document.getElementById('save-new-password-btn');
+
+// Main App Elements
 var itemNameInput = document.getElementById('item-name');
 var itemPriceInput = document.getElementById('item-price');
 var saveBtn = document.getElementById('save-btn');
@@ -67,11 +111,317 @@ var backupScheduleContainer = document.getElementById('backup-schedule-container
 var saveAutoBackupSettingsBtn = document.getElementById('save-auto-backup-settings-btn');
 var daysCheckboxes = autoBackupModal.querySelectorAll('.days-checkboxes input[type="checkbox"]');
 
-// Auto Backup Settings
-var autoBackupSettings = JSON.parse(localStorage.getItem('autoBackupSettings')) || {
+// Auto Backup Settings (Now per user)
+var autoBackupSettings = {
   enabled: true,
   scheduledDays: []
 };
+
+// Text Size Preference
+var textSizePreference = 'normal'; // 'small', 'normal', 'large'
+
+// Authentication State Listener
+auth.onAuthStateChanged(function(user) {
+  if (user) {
+    currentUser = user;
+    console.log('User is logged in:', user.email);
+    initializeAppForUser();
+  } else {
+    currentUser = null;
+    console.log('No user is logged in.');
+    showLoginPage();
+  }
+});
+
+// Function to Initialize App for Logged-in User
+function initializeAppForUser() {
+  // Set up Firestore references
+  itemsCollection = db.collection('users').doc(currentUser.uid).collection('items');
+  recycleBinCollection = db.collection('users').doc(currentUser.uid).collection('recycleBin');
+  userSettingsDoc = db.collection('users').doc(currentUser.uid);
+
+  // Load User Settings
+  loadUserSettings();
+
+  // Initialize Listeners
+  listenToItems();
+  listenToRecycleBin();
+
+  // Show Main App
+  loginPage.classList.add('hidden');
+  registerPage.classList.add('hidden');
+  mainApp.classList.remove('hidden');
+}
+
+// Function to Load User Settings
+function loadUserSettings() {
+  userSettingsDoc.get()
+    .then(function(doc) {
+      if (doc.exists) {
+        var settings = doc.data();
+        autoBackupSettings = settings.autoBackupSettings || autoBackupSettings;
+        textSizePreference = settings.textSizePreference || 'normal';
+
+        // Apply Text Size Preference
+        applyTextSizePreference();
+
+        console.log('User settings loaded:', settings);
+      } else {
+        // No settings found, use defaults
+        console.log('No user settings found, using defaults.');
+      }
+
+      // Initialize Auto Backup
+      initializeAutoBackupSettings();
+    })
+    .catch(function(error) {
+      console.error("Error loading user settings:", error);
+    });
+}
+
+// Function to Apply Text Size Preference
+function applyTextSizePreference() {
+  document.body.classList.remove('small-text', 'large-text');
+  if (textSizePreference === 'small') {
+    document.body.classList.add('small-text');
+  } else if (textSizePreference === 'large') {
+    document.body.classList.add('large-text');
+  }
+}
+
+// Login Functionality
+loginBtn.addEventListener('click', function() {
+  var email = loginEmail.value.trim();
+  var password = loginPassword.value;
+
+  if (email && password) {
+    var persistence = rememberMeCheckbox.checked ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION;
+    auth.setPersistence(persistence)
+      .then(function() {
+        return auth.signInWithEmailAndPassword(email, password);
+      })
+      .catch(function(error) {
+        console.error("Error during login:", error);
+        alert(error.message);
+      });
+  } else {
+    alert('Please enter email and password.');
+  }
+});
+
+// Registration Functionality
+registerBtn.addEventListener('click', function() {
+  var username = registerUsername.value.trim();
+  var email = registerEmail.value.trim();
+  var password = registerPassword.value;
+  var confirmPassword = registerConfirmPassword.value;
+
+  if (!username || !email || !password || !confirmPassword) {
+    alert('Please fill in all fields.');
+    return;
+  }
+
+  if (password !== confirmPassword) {
+    alert('Passwords do not match.');
+    return;
+  }
+
+  auth.createUserWithEmailAndPassword(email, password)
+    .then(function(userCredential) {
+      var user = userCredential.user;
+      return user.updateProfile({ displayName: username });
+    })
+    .then(function() {
+      console.log('User registered and username set:', username);
+    })
+    .catch(function(error) {
+      console.error("Error during registration:", error);
+      alert(error.message);
+    });
+});
+
+// Show Register Page
+showRegisterLink.addEventListener('click', function(e) {
+  e.preventDefault();
+  loginPage.classList.add('hidden');
+  registerPage.classList.remove('hidden');
+});
+
+// Show Login Page
+showLoginLink.addEventListener('click', function(e) {
+  e.preventDefault();
+  registerPage.classList.add('hidden');
+  loginPage.classList.remove('hidden');
+});
+
+// Logout Functionality
+logoutBtn.addEventListener('click', function() {
+  auth.signOut()
+    .then(function() {
+      console.log('User logged out.');
+      sidebarMenu.classList.add('hidden');
+      document.body.classList.remove('sidebar-open');
+    })
+    .catch(function(error) {
+      console.error("Error during logout:", error);
+    });
+});
+
+// Show Login Page Function
+function showLoginPage() {
+  mainApp.classList.add('hidden');
+  registerPage.classList.add('hidden');
+  loginPage.classList.remove('hidden');
+  // Clear input fields
+  loginEmail.value = '';
+  loginPassword.value = '';
+  rememberMeCheckbox.checked = false;
+}
+
+// Text Size Adjustment Functionality
+increaseTextSizeBtn.addEventListener('click', function() {
+  if (textSizePreference === 'normal') {
+    textSizePreference = 'large';
+  } else if (textSizePreference === 'small') {
+    textSizePreference = 'normal';
+  }
+  applyTextSizePreference();
+  saveTextSizePreference();
+});
+
+decreaseTextSizeBtn.addEventListener('click', function() {
+  if (textSizePreference === 'normal') {
+    textSizePreference = 'small';
+  } else if (textSizePreference === 'large') {
+    textSizePreference = 'normal';
+  }
+  applyTextSizePreference();
+  saveTextSizePreference();
+});
+
+function saveTextSizePreference() {
+  userSettingsDoc.set({ textSizePreference: textSizePreference }, { merge: true })
+    .then(function() {
+      console.log('Text size preference saved:', textSizePreference);
+    })
+    .catch(function(error) {
+      console.error("Error saving text size preference:", error);
+    });
+}
+
+// Sidebar Menu Functionality
+sidebarButton.addEventListener('click', function() {
+  sidebarMenu.classList.remove('hidden');
+  document.body.classList.add('sidebar-open');
+});
+
+closeSidebarBtn.addEventListener('click', function() {
+  sidebarMenu.classList.add('hidden');
+  document.body.classList.remove('sidebar-open');
+});
+
+// Change Username Functionality
+changeUsernameBtn.addEventListener('click', function() {
+  changeUsernameModal.classList.remove('hidden');
+});
+
+closeChangeUsernameModalBtn.addEventListener('click', function() {
+  changeUsernameModal.classList.add('hidden');
+});
+
+saveNewUsernameBtn.addEventListener('click', function() {
+  var newUsername = newUsernameInput.value.trim();
+  if (newUsername) {
+    currentUser.updateProfile({ displayName: newUsername })
+      .then(function() {
+        alert('Username updated successfully!');
+        newUsernameInput.value = '';
+        changeUsernameModal.classList.add('hidden');
+        console.log('Username updated to:', newUsername);
+      })
+      .catch(function(error) {
+        console.error("Error updating username:", error);
+        alert('Failed to update username. Please try again.');
+      });
+  } else {
+    alert('Please enter a new username.');
+  }
+});
+
+// Change Password Functionality
+changePasswordBtn.addEventListener('click', function() {
+  changePasswordModal.classList.remove('hidden');
+});
+
+closeChangePasswordModalBtn.addEventListener('click', function() {
+  changePasswordModal.classList.add('hidden');
+});
+
+saveNewPasswordBtn.addEventListener('click', function() {
+  var currentPassword = currentPasswordInput.value;
+  var newPassword = newPasswordInput.value;
+  var confirmNewPassword = confirmNewPasswordInput.value;
+
+  if (!currentPassword || !newPassword || !confirmNewPassword) {
+    alert('Please fill in all fields.');
+    return;
+  }
+
+  if (newPassword !== confirmNewPassword) {
+    alert('New passwords do not match.');
+    return;
+  }
+
+  // Re-authenticate user
+  var credential = firebase.auth.EmailAuthProvider.credential(currentUser.email, currentPassword);
+  currentUser.reauthenticateWithCredential(credential)
+    .then(function() {
+      return currentUser.updatePassword(newPassword);
+    })
+    .then(function() {
+      alert('Password updated successfully!');
+      currentPasswordInput.value = '';
+      newPasswordInput.value = '';
+      confirmNewPasswordInput.value = '';
+      changePasswordModal.classList.add('hidden');
+      console.log('Password updated.');
+    })
+    .catch(function(error) {
+      console.error("Error updating password:", error);
+      alert(error.message);
+    });
+});
+
+// Function to Render Items
+function renderItems(itemsToRender) {
+  itemList.innerHTML = '';
+  itemsToRender.forEach(function(item) {
+    var li = document.createElement('li');
+    li.setAttribute('data-index', item.id);
+
+    var itemNameSpan = document.createElement('span');
+    itemNameSpan.classList.add('item-name');
+    itemNameSpan.textContent = item.name + ' - ₹' + item.price;
+    li.appendChild(itemNameSpan);
+
+    var itemOptions = document.createElement('div');
+    itemOptions.classList.add('item-options');
+    itemOptions.innerHTML = '<button class="edit-item-btn">Edit Item</button><button class="delete-item-btn">Delete Item</button>';
+    li.appendChild(itemOptions);
+
+    itemList.appendChild(li);
+  });
+}
+
+// Function to Render Recycle Bin Items
+function renderRecycleBin(binItems) {
+  recycleBinList.innerHTML = '';
+  binItems.forEach(function(item) {
+    var li = document.createElement('li');
+    li.innerHTML = '<input type="checkbox" data-id="' + item.id + '"><label>' + item.name + ' - ₹' + item.price + '</label>';
+    recycleBinList.appendChild(li);
+  });
+}
 
 // Listen to Firestore Items Collection
 function listenToItems() {
@@ -100,10 +450,6 @@ function listenToRecycleBin() {
     alert('Failed to fetch recycle bin items. Please try again.');
   });
 }
-
-// Initialize Listeners
-listenToItems();
-listenToRecycleBin();
 
 // Event Listener: Save Button
 saveBtn.addEventListener('click', function() {
@@ -271,12 +617,24 @@ function autoBackup() {
 
 // Schedule Automatic Backups
 function initializeAutoBackupSettings() {
+  // Schedule automatic backups based on settings
   setInterval(function() {
-    autoBackup();
+    scheduleAutoBackup();
   }, 60 * 60 * 1000); // Check every hour
 
   // Initial check
-  autoBackup();
+  scheduleAutoBackup();
+}
+
+function scheduleAutoBackup() {
+  if (!autoBackupSettings.enabled) return;
+
+  var now = new Date();
+  var currentDay = now.getDay();
+
+  if (autoBackupSettings.scheduledDays.length === 0 || autoBackupSettings.scheduledDays.indexOf(currentDay) !== -1) {
+    autoBackup();
+  }
 }
 
 // Event Listener: Restore Button
@@ -711,37 +1069,6 @@ function deleteItem(itemId) {
   }
 }
 
-// Function to Render Items
-function renderItems(itemsToRender) {
-  itemList.innerHTML = '';
-  itemsToRender.forEach(function(item) {
-    var li = document.createElement('li');
-    li.setAttribute('data-index', item.id);
-
-    var itemNameSpan = document.createElement('span');
-    itemNameSpan.classList.add('item-name');
-    itemNameSpan.textContent = item.name + ' - ₹' + item.price;
-    li.appendChild(itemNameSpan);
-
-    var itemOptions = document.createElement('div');
-    itemOptions.classList.add('item-options');
-    itemOptions.innerHTML = '<button class="edit-item-btn">Edit Item</button><button class="delete-item-btn">Delete Item</button>';
-    li.appendChild(itemOptions);
-
-    itemList.appendChild(li);
-  });
-}
-
-// Function to Render Recycle Bin Items
-function renderRecycleBin(binItems) {
-  recycleBinList.innerHTML = '';
-  binItems.forEach(function(item) {
-    var li = document.createElement('li');
-    li.innerHTML = '<input type="checkbox" data-id="' + item.id + '"><label>' + item.name + ' - ₹' + item.price + '</label>';
-    recycleBinList.appendChild(li);
-  });
-}
-
 // Event Listener: Auto Backup Settings Button
 autoBackupSettingsBtn.addEventListener('click', function() {
   menuOptions.classList.add('hidden');
@@ -779,14 +1106,18 @@ saveAutoBackupSettingsBtn.addEventListener('click', function() {
     .filter(function(cb) { return cb.checked; })
     .map(function(cb) { return parseInt(cb.value); });
 
-  localStorage.setItem('autoBackupSettings', JSON.stringify(autoBackupSettings));
-  alert('Auto backup settings saved.');
-  autoBackupModal.classList.add('hidden');
-  console.log('Auto backup settings updated:', autoBackupSettings);
+  // Save to Firestore
+  userSettingsDoc.set({ autoBackupSettings: autoBackupSettings }, { merge: true })
+    .then(function() {
+      alert('Auto backup settings saved.');
+      autoBackupModal.classList.add('hidden');
+      console.log('Auto backup settings updated:', autoBackupSettings);
+    })
+    .catch(function(error) {
+      console.error("Error saving auto backup settings:", error);
+      alert('Failed to save settings. Please try again.');
+    });
 });
-
-// Initialize Auto Backup Settings
-initializeAutoBackupSettings();
 
 // Register Service Worker
 if ('serviceWorker' in navigator) {
