@@ -17,7 +17,12 @@ var firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 firebase.analytics();
 var db = firebase.firestore();
-var auth = firebase.auth();
+
+// No Authentication Needed (Shared Data Across All Devices)
+
+// Data Collections (Shared)
+var itemsCollection = db.collection('items');
+var recycleBinCollection = db.collection('recycleBin');
 
 // DOM Elements
 var itemNameInput = document.getElementById('item-name');
@@ -64,49 +69,14 @@ var backupScheduleContainer = document.getElementById('backup-schedule-container
 var saveAutoBackupSettingsBtn = document.getElementById('save-auto-backup-settings-btn');
 var daysCheckboxes = autoBackupModal.querySelectorAll('.days-checkboxes input[type="checkbox"]');
 
-// Data Collections
-var itemsCollection;
-var recycleBinCollection;
-
-// User Authentication
-var currentUser = null;
-
 // Auto Backup Settings
 var autoBackupSettings = JSON.parse(localStorage.getItem('autoBackupSettings')) || {
   enabled: true,
   scheduledDays: []
 };
 
-// Initialize Authentication
-auth.signInAnonymously()
-  .then(function() {
-    currentUser = auth.currentUser;
-    setupDatabaseReferences();
-    listenToItems();
-    listenToRecycleBin();
-    console.log("User authenticated anonymously with UID:", currentUser.uid);
-  })
-  .catch(function(error) {
-    console.error("Authentication error:", error);
-    alert("Failed to authenticate. Please refresh the page and try again.");
-  });
-
-// Setup Firestore References
-function setupDatabaseReferences() {
-  if (!currentUser) {
-    console.error("User is not authenticated.");
-    return;
-  }
-  itemsCollection = db.collection('users').doc(currentUser.uid).collection('items');
-  recycleBinCollection = db.collection('users').doc(currentUser.uid).collection('recycleBin');
-}
-
 // Listen to Firestore Items Collection
 function listenToItems() {
-  if (!itemsCollection) {
-    console.error("Items collection is not defined.");
-    return;
-  }
   itemsCollection.orderBy('timestamp', 'desc').onSnapshot(function(snapshot) {
     var items = [];
     snapshot.forEach(function(doc) {
@@ -121,10 +91,6 @@ function listenToItems() {
 
 // Listen to Firestore Recycle Bin Collection
 function listenToRecycleBin() {
-  if (!recycleBinCollection) {
-    console.error("Recycle Bin collection is not defined.");
-    return;
-  }
   recycleBinCollection.orderBy('timestamp', 'desc').onSnapshot(function(snapshot) {
     var binItems = [];
     snapshot.forEach(function(doc) {
@@ -136,6 +102,10 @@ function listenToRecycleBin() {
     alert('Failed to fetch recycle bin items. Please try again.');
   });
 }
+
+// Initialize Listeners
+listenToItems();
+listenToRecycleBin();
 
 // Event Listener: Save Button
 saveBtn.addEventListener('click', function() {
@@ -152,6 +122,7 @@ saveBtn.addEventListener('click', function() {
     itemsCollection.add({
       name: itemName,
       price: priceNumber,
+      nameLower: itemName.toLowerCase(),
       timestamp: firebase.firestore.FieldValue.serverTimestamp()
     })
     .then(function() {
@@ -328,7 +299,7 @@ restoreFileInput.addEventListener('change', function(e) {
     try {
       var importedData = JSON.parse(event.target.result);
       if (Array.isArray(importedData) && importedData.every(function(item) { return 'name' in item && 'price' in item; })) {
-        var confirmRestore = confirm('Do you want to overwrite your current data with the backup?');
+        var confirmRestore = confirm('Do you want to overwrite the current data with the backup?');
         if (confirmRestore) {
           // Clear existing items
           itemsCollection.get()
@@ -433,7 +404,7 @@ function populateMultiDeleteModal() {
       snapshot.forEach(function(doc) {
         var item = doc.data();
         var li = document.createElement('li');
-        li.innerHTML = '<input type="checkbox" data-id="' + doc.id + '"><label>' + item.name + ' - $' + item.price + '</label>';
+        li.innerHTML = '<input type="checkbox" data-id="' + doc.id + '"><label>' + item.name + ' - ₹' + item.price + '</label>';
         multiDeleteItemList.appendChild(li);
       });
     })
@@ -539,7 +510,7 @@ function populateRecycleBinModal() {
       snapshot.forEach(function(doc) {
         var item = doc.data();
         var li = document.createElement('li');
-        li.innerHTML = '<input type="checkbox" data-id="' + doc.id + '"><label>' + item.name + ' - $' + item.price + '</label>';
+        li.innerHTML = '<input type="checkbox" data-id="' + doc.id + '"><label>' + item.name + ' - ₹' + item.price + '</label>';
         recycleBinList.appendChild(li);
       });
     })
@@ -753,7 +724,7 @@ function renderItems(itemsToRender) {
 
     var itemNameSpan = document.createElement('span');
     itemNameSpan.classList.add('item-name');
-    itemNameSpan.textContent = item.name + ' - $' + item.price;
+    itemNameSpan.textContent = item.name + ' - ₹' + item.price;
     li.appendChild(itemNameSpan);
 
     var itemOptions = document.createElement('div');
@@ -770,7 +741,7 @@ function renderRecycleBin(binItems) {
   recycleBinList.innerHTML = '';
   binItems.forEach(function(item) {
     var li = document.createElement('li');
-    li.innerHTML = '<input type="checkbox" data-id="' + item.id + '"><label>' + item.name + ' - $' + item.price + '</label>';
+    li.innerHTML = '<input type="checkbox" data-id="' + item.id + '"><label>' + item.name + ' - ₹' + item.price + '</label>';
     recycleBinList.appendChild(li);
   });
 }
@@ -854,4 +825,3 @@ if ('serviceWorker' in navigator) {
     .catch(function(err) {
       console.log('Service Worker Registration Failed:', err);
     });
-}
