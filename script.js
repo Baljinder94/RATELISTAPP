@@ -141,22 +141,25 @@ function initializeAppForUser() {
   recycleBinCollection = db.collection('users').doc(currentUser.uid).collection('recycleBin');
   userSettingsDoc = db.collection('users').doc(currentUser.uid);
 
-  // Load User Settings
-  loadUserSettings();
+  // Load User Settings and then initialize the app
+  loadUserSettings().then(function() {
+    // Initialize Listeners
+    listenToItems();
+    listenToRecycleBin();
 
-  // Initialize Listeners
-  listenToItems();
-  listenToRecycleBin();
-
-  // Show Main App
-  loginPage.classList.add('hidden');
-  registerPage.classList.add('hidden');
-  mainApp.classList.remove('hidden');
+    // Show Main App
+    loginPage.classList.add('hidden');
+    registerPage.classList.add('hidden');
+    mainApp.classList.remove('hidden');
+  }).catch(function(error) {
+    console.error("Error initializing app for user:", error);
+    alert('Failed to initialize app. Please try again.');
+  });
 }
 
 // Function to Load User Settings
 function loadUserSettings() {
-  userSettingsDoc.get()
+  return userSettingsDoc.get()
     .then(function(doc) {
       if (doc.exists) {
         var settings = doc.data();
@@ -262,6 +265,7 @@ logoutBtn.addEventListener('click', function() {
       console.log('User logged out.');
       sidebarMenu.classList.add('hidden');
       document.body.classList.remove('sidebar-open');
+      showLoginPage();
     })
     .catch(function(error) {
       console.error("Error during logout:", error);
@@ -473,7 +477,7 @@ saveBtn.addEventListener('click', function() {
     .then(function() {
       itemNameInput.value = '';
       itemPriceInput.value = '';
-      if (autoBackupSettings.enabled) autoBackup(); // Automatic backup
+      // Do not call autoBackup here to prevent immediate download upon adding an item
       console.log('Item added:', itemName, priceNumber);
     })
     .catch(function(error) {
@@ -623,8 +627,10 @@ function initializeAutoBackupSettings() {
     scheduleAutoBackup();
   }, 60 * 60 * 1000); // Check every hour
 
-  // Initial check
-  scheduleAutoBackup();
+  // Initial check after some delay to prevent interference with login
+  setTimeout(function() {
+    scheduleAutoBackup();
+  }, 5000);
 }
 
 function scheduleAutoBackup() {
@@ -681,7 +687,6 @@ restoreFileInput.addEventListener('change', function(e) {
             })
             .then(function() {
               alert('Data restored successfully!');
-              if (autoBackupSettings.enabled) autoBackup(); // Automatic backup after restore
               console.log('Data restored from backup.');
             })
             .catch(function(error) {
@@ -716,7 +721,6 @@ clearDataBtn.addEventListener('click', function() {
       })
       .then(function() {
         alert('All data cleared.');
-        if (autoBackupSettings.enabled) autoBackup(); // Automatic backup after clearing data
         console.log('All data cleared.');
       })
       .catch(function(error) {
@@ -819,7 +823,6 @@ multiDeleteConfirmBtn.addEventListener('click', function() {
   Promise.all(promises)
     .then(function() {
       alert('Selected items moved to recycle bin.');
-      if (autoBackupSettings.enabled) autoBackup(); // Automatic backup after multi-delete
       console.log('Items moved to recycle bin.');
     })
     .catch(function(error) {
@@ -914,7 +917,6 @@ restoreSelectedBtn.addEventListener('click', function() {
   Promise.all(promises)
     .then(function() {
       alert('Selected items restored.');
-      if (autoBackupSettings.enabled) autoBackup(); // Automatic backup after restoration
       console.log('Items restored from recycle bin.');
     })
     .catch(function(error) {
@@ -938,7 +940,6 @@ emptyBinBtn.addEventListener('click', function() {
     })
     .then(function() {
       alert('Recycle bin emptied.');
-      if (autoBackupSettings.enabled) autoBackup(); // Automatic backup after emptying bin
       console.log('Recycle bin emptied.');
     })
     .catch(function(error) {
@@ -1020,7 +1021,6 @@ saveEditBtn.addEventListener('click', function() {
     .then(function() {
       editModal.classList.add('hidden');
       alert('Item updated successfully!');
-      if (autoBackupSettings.enabled) autoBackup(); // Automatic backup after edit
       console.log('Item updated:', newName, priceNumber);
     })
     .catch(function(error) {
@@ -1052,7 +1052,6 @@ function deleteItem(itemId) {
           })
           .then(function() {
             alert('Item moved to recycle bin.');
-            if (autoBackupSettings.enabled) autoBackup(); // Automatic backup after deletion
             console.log('Item moved to recycle bin:', itemData.name);
           })
           .catch(function(error) {
