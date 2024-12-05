@@ -82,7 +82,6 @@ var recycleBinBtn = document.getElementById('recycle-bin-btn');
 var restoreFileInput = document.getElementById('restore-file-input');
 var menuButton = document.getElementById('menu-button');
 var menuOptions = document.getElementById('menu-options');
-var autoBackupLink = document.getElementById('auto-backup-link');
 var autoBackupSettingsBtn = document.getElementById('auto-backup-settings-btn');
 
 // Modals
@@ -477,7 +476,6 @@ saveBtn.addEventListener('click', function() {
     .then(function() {
       itemNameInput.value = '';
       itemPriceInput.value = '';
-      // Do not call autoBackup here to prevent immediate download upon adding an item
       console.log('Item added:', itemName, priceNumber);
     })
     .catch(function(error) {
@@ -600,20 +598,12 @@ function autoBackup() {
         data.push({ id: doc.id, ...doc.data() });
       });
 
+      // Save backup data to localStorage
       var dateString = date.toISOString().replace(/[:.]/g, '-');
-      var fileName = 'auto_backup_rate_list_app_' + dateString;
+      var backupKey = 'auto_backup_rate_list_app_' + dateString;
+      localStorage.setItem(backupKey, JSON.stringify(data));
 
-      var dataStr = JSON.stringify(data, null, 2);
-      var blob = new Blob([dataStr], { type: "application/json" });
-      var url = URL.createObjectURL(blob);
-
-      autoBackupLink.href = url;
-      autoBackupLink.download = fileName + ".json";
-      autoBackupLink.click();
-
-      URL.revokeObjectURL(url);
-
-      console.log('Automatic backup downloaded as:', fileName + ".json");
+      console.log('Automatic backup saved to localStorage as:', backupKey);
     })
     .catch(function(error) {
       console.error("Error during automatic backup:", error);
