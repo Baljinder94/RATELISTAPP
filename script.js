@@ -18,8 +18,6 @@ firebase.initializeApp(firebaseConfig);
 firebase.analytics();
 var db = firebase.firestore();
 
-// No Authentication Needed (Shared Data Across All Devices)
-
 // Data Collections (Shared)
 var itemsCollection = db.collection('items');
 var recycleBinCollection = db.collection('recycleBin');
@@ -271,16 +269,14 @@ function autoBackup() {
     });
 }
 
-// Schedule Automatic Backups based on Settings
-function scheduleAutoBackup() {
-  if (autoBackupSettings.scheduledDays.length === 0) return;
-
-  var now = new Date();
-  var currentDay = now.getDay();
-
-  if (autoBackupSettings.scheduledDays.indexOf(currentDay) !== -1) {
+// Schedule Automatic Backups
+function initializeAutoBackupSettings() {
+  setInterval(function() {
     autoBackup();
-  }
+  }, 60 * 60 * 1000); // Check every hour
+
+  // Initial check
+  autoBackup();
 }
 
 // Event Listener: Restore Button
@@ -686,7 +682,7 @@ function deleteItem(itemId) {
         if (docSnap.exists) {
           var itemData = docSnap.data();
           // Add to recycle bin
-          recycleBinCollection.add({
+          return recycleBinCollection.add({
             name: itemData.name,
             price: itemData.price,
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
@@ -789,29 +785,6 @@ saveAutoBackupSettingsBtn.addEventListener('click', function() {
   console.log('Auto backup settings updated:', autoBackupSettings);
 });
 
-// Function: Initialize Auto Backup Settings
-function initializeAutoBackupSettings() {
-  // Schedule automatic backups based on settings
-  setInterval(function() {
-    scheduleAutoBackup();
-  }, 60 * 60 * 1000); // Check every hour
-
-  // Initial check
-  scheduleAutoBackup();
-}
-
-// Function: Schedule Auto Backup
-function scheduleAutoBackup() {
-  if (!autoBackupSettings.enabled) return;
-
-  var now = new Date();
-  var currentDay = now.getDay();
-
-  if (autoBackupSettings.scheduledDays.length === 0 || autoBackupSettings.scheduledDays.indexOf(currentDay) !== -1) {
-    autoBackup();
-  }
-}
-
 // Initialize Auto Backup Settings
 initializeAutoBackupSettings();
 
@@ -825,3 +798,4 @@ if ('serviceWorker' in navigator) {
     .catch(function(err) {
       console.log('Service Worker Registration Failed:', err);
     });
+}
